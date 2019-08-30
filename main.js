@@ -1,19 +1,78 @@
 
 var urlApi = "http://157.230.17.132:4002/sales/";
 
+
+
+function quadrimestri(data) {
+
+  var quadrimestri = [];
+
+  for (var i=0;i<data.length;i++) {
+
+    var date = data[i].date;
+    var inc = data[i].amount;
+
+    var mese = moment(date, "DD/MM/YYYY").month();
+
+    if (!quadrimestri[mese]) {
+
+      quadrimestri[mese] = 0;
+    }
+
+     quadrimestri[mese] += Number(inc);
+
+     var names = Object.keys(quadrimestri);
+
+  }
+
+  console.log(names);
+
+  //somma per mese singolo
+  console.log("somma mesi singoli",quadrimestri);
+
+  var inizio = 0;
+  var fine = 3;
+
+  var singoli = [];
+
+  for (var i = 0; i < 4; i++) {
+    var sliced = quadrimestri.slice(inizio, fine);
+    // console.log("trimestre numero ",i,"valori",sliced);
+
+    singoli[i] = sliced;
+
+    inizio += 3;
+
+    fine += 3;
+
+  }
+
+  var sumTrimestri = [];
+
+  for (var i = 0; i < singoli.length; i++) {
+    sumTrimestri.push(singoli[i].reduce((a, b) => a + b, 0))
+
+  }
+
+  console.log("singoli",sumTrimestri);
+
+  return sumTrimestri;
+
+
+}
+
+
 function aggiungiValore(){
 
   var addAgente = $(".listaAgenti option:selected").val();
-  console.log("selezionato",addAgente);
+  console.log("agente selezionato",addAgente);
 
   var addMese = $(".listaMesi option:selected").val();
-  console.log("selezionato mese",addMese);
+  console.log("mese selezionato ",addMese);
 
   var inputVal = Number($(".valore").val());
-  console.log("importo",inputVal);
+  console.log("importo inserito",inputVal);
 
-  // var months = moment.months(Number(addMese));
-  // console.log("converto in parole",months);
 
   $.ajax({
     url : urlApi,
@@ -21,7 +80,7 @@ function aggiungiValore(){
     data : {
       salesman : addAgente,
       amount : inputVal,
-      date : addMese
+      date : "12/0" + addMese + "/2017"
 
     },
     success : function(){
@@ -33,32 +92,31 @@ function aggiungiValore(){
     }
 
   })
-}
 
 
-
-
+  window.myLineChart.update();
+};
 
 function selectMesi(){
 
     var months = moment.months();
-    console.log(months);
+    // console.log(months);
 
     var source = $("#mesi-template").html();
     var template = Handlebars.compile(source);
 
     for (var i = 0; i < months.length; i++) {
-      var base = months[i];
+      var mese = months[i];
 
       var daInserire = {
         indice : i,
-        mese : base
+        mese : mese
       }
 
       var html = template(daInserire);
       $(".listaMesi").append(html);
   }
-}
+};
 
 function contributoAgente(data){
 
@@ -77,7 +135,7 @@ function contributoAgente(data){
         agenti.somma.push(0);
     }
 
-    var amount = d.amount;
+    var amount = Number(d.amount);
 
     //ciclo per il numero di agenti
     for (var x = 0; x < agenti.nome.length; x++) {
@@ -88,41 +146,64 @@ function contributoAgente(data){
       }
     }
 
-  }
+  }//fine ciclo for data
 
   var tortaInt = 0;
-  for (var x = 0; x < agenti.nome.length; x++) {
+  for (var x = 0; x < agenti.somma.length; x++) {
     tortaInt += agenti.somma[x];
-    console.log(agenti.somma);
+    // console.log(agenti.somma);
   }
-  console.log("toooorta",tortaInt);
 
-
+  //trasformo in percentuale
   for (var x = 0; x < agenti.nome.length; x++) {
-    agenti.somma[x] = Math.round((tortaInt/agenti.somma[x])*10);
+    agenti.somma[x] = ((agenti.somma[x]/tortaInt)*100);
+    console.log(agenti.somma[x]);
+    agenti.somma[x] = agenti.somma[x].toPrecision(3);
+    console.log(agenti.somma[x]);
+
+  }
+
+  return agenti.somma;
+
+};
+
+function selectNomi(data){
+
+  var nomiAgenti = [];
+
+  for (var i = 0; i < data.length; i++) {
+    var d = data[i];
+
+    var nome = d.salesman;//
+
+    if (!nomiAgenti.includes(nome)) {
+        nomiAgenti.push(nome);
+    }
   }
 
 
-  //select input
   var source = $("#agenti-template").html();
   var template = Handlebars.compile(source);
 
-  for (var i = 0; i < agenti.nome.length; i++) {
+  for (var i = 0; i < nomiAgenti.length; i++) {
 
-    console.log(agenti.nome[i]);
+    // console.log(agenti.nome[i]);
 
     var daInserire = {
-      agente : agenti.nome[i],
+      agente : nomiAgenti[i],
     }
 
     var html = template(daInserire);
     $(".listaAgenti").append(html);
   }
 
+  console.log(nomiAgenti);
 
-  return [agenti.somma,agenti.nome];
+  return nomiAgenti;
+
 
 }
+
 
 function getAmount(data){
 
@@ -133,7 +214,7 @@ function getAmount(data){
     // console.log(d);
 
     var date = d.date;
-    var amount = d.amount;
+    var amount = Number(d.amount);
 
     //prendo il mese della data
     var mese = moment(date, "DD/MM/YYYY").month();
@@ -149,7 +230,7 @@ function getAmount(data){
 
   return monthProfit;
 
-}
+};
 
 function getData(){
   $.ajax({
@@ -174,27 +255,15 @@ function getData(){
           }
       });
 
-    },
-    error: function(){
-
-    }
-
-  })
-
-  //secondo grafico
-  $.ajax({
-    url : urlApi,
-    method : "GET",
-
-    success : function(data){
+      //secondo
       var ctx = document.getElementById('myChartPie').getContext('2d');
       var myChart = new Chart(ctx, {
           type: 'doughnut',
           data: {
-              labels: contributoAgente(data)[1],
+              labels: selectNomi(data),
               datasets: [{
                   label: '# of Votes',
-                  data: contributoAgente(data)[0],
+                  data: contributoAgente(data),
                   backgroundColor: [
                       'rgba(255, 99, 132,1)',
                       'rgba(54, 162, 235,1)',
@@ -207,12 +276,41 @@ function getData(){
           }
       });
 
+
+      //terzo
+      var ctx = document.getElementById('myChartBar').getContext('2d');
+      var myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: ["Q1","Q2","Q3","Q4"],
+              datasets: [{
+                  label: '# of Votes',
+                  data: quadrimestri(data),
+                  backgroundColor: [
+                      'rgba(255, 99, 132,1)',
+                      'rgba(54, 162, 235,1)',
+                      'rgba(255, 206, 86,1)',
+                      'rgba(75, 192, 192,1)',
+                      'rgba(153, 102, 255,1)',
+                      'rgba(255, 159, 64,1)'
+                  ]
+              }]
+          }
+      });
+
+
+
+
+
+
+
     },
     error: function(){
 
     }
 
   })
+
 }
 
 function listMonth(){
