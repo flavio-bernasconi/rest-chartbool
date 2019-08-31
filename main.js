@@ -6,6 +6,7 @@ var urlApi = "http://157.230.17.132:4002/sales/";
 function quadrimestri(data) {
 
   var quadrimestri = [];
+  var quantita = [];
 
   for (var i=0;i<data.length;i++) {
 
@@ -14,19 +15,21 @@ function quadrimestri(data) {
 
     var mese = moment(date, "DD/MM/YYYY").month();
 
+    //quadrimestri [0] non e' presente quindi lo creo e gli assegno 0
     if (!quadrimestri[mese]) {
 
       quadrimestri[mese] = 0;
+      quantita[mese] = 0;
     }
 
+    //quadrimestri[0] esiste sommo il valore corrispettivo
      quadrimestri[mese] += Number(inc);
+     quantita[mese] += 1;
 
-     var names = Object.keys(quadrimestri);
 
   }
 
-  console.log(names);
-
+  console.log(quantita);
   //somma per mese singolo
   console.log("somma mesi singoli",quadrimestri);
 
@@ -34,12 +37,15 @@ function quadrimestri(data) {
   var fine = 3;
 
   var singoli = [];
+  var singoliQuantita = [];
 
   for (var i = 0; i < 4; i++) {
     var sliced = quadrimestri.slice(inizio, fine);
-    // console.log("trimestre numero ",i,"valori",sliced);
+    var slicedQuantita = quantita.slice(inizio, fine);
+    // console.log("trimestre numero ",i,"valori",quantita);
 
     singoli[i] = sliced;
+    singoliQuantita[i] = slicedQuantita;
 
     inizio += 3;
 
@@ -47,16 +53,21 @@ function quadrimestri(data) {
 
   }
 
+  console.log(singoliQuantita);
+
   var sumTrimestri = [];
+  var quantitaTrimestri = [];
 
   for (var i = 0; i < singoli.length; i++) {
-    sumTrimestri.push(singoli[i].reduce((a, b) => a + b, 0))
+    sumTrimestri.push(singoli[i].reduce((a, b) => a + b, 0));
+    quantitaTrimestri.push(singoliQuantita[i].reduce((a, b) => a + b, 0))
 
   }
 
   console.log("singoli",sumTrimestri);
+  console.log("singoli",quantitaTrimestri);
 
-  return sumTrimestri;
+  return [sumTrimestri,quantitaTrimestri];
 
 
 }
@@ -94,7 +105,6 @@ function aggiungiValore(){
   })
 
 
-  window.myLineChart.update();
 };
 
 function selectMesi(){
@@ -285,11 +295,30 @@ function getData(){
               labels: ["Q1","Q2","Q3","Q4"],
               datasets: [{
                   label: '# of Votes',
-                  data: quadrimestri(data),
+                  data: quadrimestri(data)[1],
                   backgroundColor: [
                       'rgba(255, 99, 132,1)',
                       'rgba(54, 162, 235,1)',
-                      'rgba(255, 206, 86,1)',
+                      'rgba(75, 192, 192,1)',
+                      'rgba(153, 102, 255,1)',
+                      'rgba(255, 159, 64,1)'
+                  ]
+              }]
+          }
+      });
+
+      //quarto
+      var ctx = document.getElementById('myChartBar2').getContext('2d');
+      var myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: ["Q1","Q2","Q3","Q4"],
+              datasets: [{
+                  label: '# of Votes',
+                  data: quadrimestri(data)[0],
+                  backgroundColor: [
+                      'rgba(255, 99, 132,1)',
+                      'rgba(54, 162, 235,1)',
                       'rgba(75, 192, 192,1)',
                       'rgba(153, 102, 255,1)',
                       'rgba(255, 159, 64,1)'
